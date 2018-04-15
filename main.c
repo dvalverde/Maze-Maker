@@ -28,6 +28,8 @@ GtkFileChooserDialog* DG;
 GtkWidget* window;
 GtkFileChooser* ABRIR;
 GtkFileChooser* GUARDAR;
+GtkSpinButton* filas;
+GtkSpinButton* columnas;
 
 struct entrMod{GtkEntry* entry; int dato;};
 
@@ -72,7 +74,8 @@ int main(int argc, char *argv[])
 
 	mnsjResolv=GTK_DIALOG(gtk_builder_get_object(builder, "msj_Resolver"));
 	Confirm=GTK_DIALOG(gtk_builder_get_object(builder, "Confirm"));
-
+	filas=GTK_SPIN_BUTTON(gtk_builder_get_object(builder, "spinbuttonFilas"));
+    columnas=GTK_SPIN_BUTTON(gtk_builder_get_object(builder, "spinbuttonColumnas"));
     DA=GTK_FILE_CHOOSER_DIALOG(gtk_builder_get_object(builder,"fileAbrir"));
     DG=GTK_FILE_CHOOSER_DIALOG(gtk_builder_get_object(builder,"fileGuardar"));
     ABRIR=GTK_FILE_CHOOSER(DA);
@@ -353,6 +356,15 @@ void on_SalirB_clicked()
 	gtk_main_quit();
 }
 
+void on_GenerarB_clicked()
+{
+	if (!corriendo){
+        corriendo=1;
+        if(resolv(BaseF,BaseC,&ArBase))
+            generate_maze();
+	}
+}
+
 void on_ResolverB_clicked()
 {
 	if (!corriendo){
@@ -423,19 +435,11 @@ void on_msj_aceptar_clicked()
 }
 
 void Pasar(){
-	int n=0;
-	GtkEntry* act;
-	gchar *text = g_new (gchar,1);
-	while (n<81){
-		act=entradas[n/9][n%9];
-		text=gtk_entry_get_text(act);
-		if(text[0]=='1')
-			pistas[n/9][n%9]=arregloNumeros[n/9][n%9]=1;
-		else
-			pistas[n/9][n%9]=arregloNumeros[n/9][n%9]=0;
-		n++;
-	}
-	return;
+	gchar *text = g_new (gchar,5);
+    text=gtk_entry_get_text(filas);
+    BaseF=atoi(text);
+    text=gtk_entry_get_text(columnas);
+    BaseC=atoi(text);
 }
 
 int abrir(){
