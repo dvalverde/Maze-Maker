@@ -19,7 +19,29 @@ int SpwTrR[2796203]={0};
 int SpwTrC[2796203]={0};
 int stp;
 
+char* archivo;
 
+GtkDialog* mnsjResolv;
+GtkDialog* Confirm;
+GtkFileChooserDialog* DA;
+GtkFileChooserDialog* DG;
+GtkWidget* window;
+GtkFileChooser* ABRIR;
+GtkFileChooser* GUARDAR;
+
+struct entrMod{GtkEntry* entry; int dato;};
+
+int corriendo=0;
+int solucion;
+int lst;
+
+int eab=0;
+
+char *TRes;
+
+int guardar();
+int abrir();
+void Pasar();
 
 void set_basef();
 void set_basec();
@@ -27,55 +49,41 @@ void set_basec();
 int resolv(int m,int n,int ar[][n]);
 void addFrontier(int m, int n,int i, int j,int ar[][n]);
 void removeBarrier(int m, int n,int i, int j,int ar[][n]);
-void setentrys(int m, int n,int ar[][n]);
+void setentrys(int m, int n,int ar[][n]); //n m > 1
 void generate_maze();
 void desplegar ();
 int abrir_maze(char* archivo);
 void guardar_maze(char* archivo);
 
-/*
-int main(){
-    int m=10;//n m > 1
-    int n=15;
-    if(resolv(m,n,&ArBase))
-        generate_maze();
-    guardar_maze("prueba.txt");
-    desplegar();
-    printf("\n \n");
-    if (abrir_maze("prueba.txt"))
-        desplegar();
-    return 0;
-}*/
-
 int main(int argc, char *argv[])
 {
     GtkBuilder      *builder;
-    
+
     gtk_init(&argc, &argv);
 
     builder = gtk_builder_new();
     gtk_builder_add_from_file (builder, "inter.glade", NULL);
-    
+
     window = GTK_WIDGET(gtk_builder_get_object(builder, "window_main"));
-    
+
     srand(time(NULL));
-	
+
 	TRes= g_new (gchar,20);
-	
+
 	mnsjResolv=GTK_DIALOG(gtk_builder_get_object(builder, "msj_Resolver"));
 	Confirm=GTK_DIALOG(gtk_builder_get_object(builder, "Confirm"));
-	
+
     DA=GTK_FILE_CHOOSER_DIALOG(gtk_builder_get_object(builder,"fileAbrir"));
     DG=GTK_FILE_CHOOSER_DIALOG(gtk_builder_get_object(builder,"fileGuardar"));
     ABRIR=GTK_FILE_CHOOSER(DA);
 	GUARDAR=GTK_FILE_CHOOSER(DG);;
-    
+
     Solucionable=GTK_LABEL(gtk_builder_get_object(builder, "Solucionable"));
-    
+
     gtk_builder_connect_signals(builder, NULL);
 
     g_object_unref(builder);
-	
+
     gtk_widget_show(window);
     gtk_main();
 
@@ -92,8 +100,6 @@ int resolv(int m,int n,int ar[][n]){
         for(j=0;j<n;j++)
             ar[i][j]=0;
     }
-    BaseF=m;
-    BaseC=n;
     i=spawn/n;
     j=spawn%n;
     ar[i][j]=16;
@@ -322,38 +328,6 @@ int abrir_maze(char* archivo){
 		return 0;
 }
 
-//pryecto 1
-
-
-
-char* archivo;
-
-GtkDialog* mnsjResolv;
-GtkDialog* Confirm;
-GtkFileChooserDialog* DA;
-GtkFileChooserDialog* DG;
-GtkWidget* window;
-GtkFileChooser* ABRIR;
-GtkFileChooser* GUARDAR;
-
-struct entrMod{GtkEntry* entry; int dato;};
-
-int corriendo=0;
-int solucion;
-int lst;
-
-int eab=0;
-
-char *TRes;
-
-static gboolean finProg();
-
-int guardar();
-
-int abrir();
-
-void Pasar();
-
 
 void etext(GtkSpinButton* entry,const gchar *text,gint length,gint *position, gpointer data){
 	GtkEditable *editable = GTK_EDITABLE(entry);
@@ -363,7 +337,7 @@ void etext(GtkSpinButton* entry,const gchar *text,gint length,gint *position, gp
 		result[*position]=text[*position];
 		gtk_editable_insert_text (editable, result, length, position);
 	}
-	g_signal_handlers_unblock_by_func (G_OBJECT (editable),G_CALLBACK (etext),data);	
+	g_signal_handlers_unblock_by_func (G_OBJECT (editable),G_CALLBACK (etext),data);
 	g_signal_stop_emission_by_name (G_OBJECT (editable), "insert_text");
 
 	g_free (result);
@@ -382,17 +356,9 @@ void on_SalirB_clicked()
 void on_ResolverB_clicked()
 {
 	if (!corriendo){
-		gtk_label_set_text (Tiempo,"0");
-		Pasar();
-		if (!listo()&&validar)
-			gtk_dialog_run(mnsjResolv);
-		else{
-			if (Espacio()){
-				gtk_label_set_text (Solucionable,"Buscando");
-				gtk_spinner_start (Progreso);
-				corriendo=1;
-			}
-		}
+        corriendo=1;
+        if(resolv(BaseF,BaseC,&ArBase))
+            generate_maze();
 	}
 }
 
@@ -421,12 +387,12 @@ void on_BGGuardar_clicked()
 {
     archivo= gtk_file_chooser_get_current_name (GTK_FILE_CHOOSER(GUARDAR));
     Pistas();
-    if( access( archivo, F_OK ) != -1 ) 
+    if( access( archivo, F_OK ) != -1 )
 		gtk_dialog_run(Confirm);
 	else
 		eab=1;
 	if (eab){
-		guardar();
+		guardar_maze(archivo);
 		gtk_widget_hide(GTK_WIDGET(DG));
 		eab=0;
 	}
@@ -442,7 +408,7 @@ void on_BAAbrir_clicked()
 	borrar();
 	archivo=gtk_file_chooser_get_filename(ABRIR);
 	if(abrir()==0)
-		cargar();
+		desplegar();
 	gtk_widget_hide(GTK_WIDGET(DA));
 }
 
@@ -454,19 +420,6 @@ void on_BACancelar_clicked()
 void on_msj_aceptar_clicked()
 {
 	gtk_widget_hide(GTK_WIDGET(mnsjResolv));
-}
-
-static gboolean finProg(){
-	gtk_spinner_stop (Progreso);
-	if(solucion){
-		gtk_label_set_text (Solucionable,"Si");
-		}
-	else{
-		gtk_label_set_text (Solucionable,"No");
-		}
-		nanosleep(&ts, NULL);
-		refresh_i(0);
-	return G_SOURCE_REMOVE;
 }
 
 void Pasar(){
@@ -485,10 +438,8 @@ void Pasar(){
 	return;
 }
 
-int guardar(){
-
-}
-
 int abrir(){
-
+    if (abrir_maze(archivo))
+        return 1;
+    return 0;
 }
