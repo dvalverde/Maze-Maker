@@ -295,8 +295,11 @@ void generate_maze(){
 }
 
 void desplegar(){
-    for(int i = 0;i<((2*BaseF+1)*(2*BaseC+1));i++){
-        if(i%(2*BaseC+1)==0)
+    int l=(2*BaseF+1)*(2*BaseC+1);
+    int n=(2*BaseC+1);
+    //int tam=10;
+    for(int i = 0;i<l;i++){
+        if(i%n==0)
             printf("\n");
         if(ArPant[i]==0)
             printf("XX");
