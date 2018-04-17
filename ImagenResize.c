@@ -1,4 +1,4 @@
-#include<gtk/gtk.h>
+#include <gtk/gtk.h>
 
 gboolean draw_picture(GtkWidget *da, cairo_t *cr, gpointer data)
 {
@@ -12,6 +12,8 @@ gboolean draw_picture(GtkWidget *da, cairo_t *cr, gpointer data)
   g_object_unref(temp);
   return FALSE;
 }
+
+
 int main(int argc, char *argv[])
 {
   gtk_init(&argc, &argv);
@@ -24,7 +26,7 @@ int main(int argc, char *argv[])
   g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
   //Needs a valid picture.
-  GdkPixbuf *pixbuf=gdk_pixbuf_new_from_file(argc>1 ? argv[1] : "image.jpg", NULL);
+  GdkPixbuf *pixbuf=gdk_pixbuf_new_from_file(argc>1 ? argv[1] : "image.png", NULL);
 
   GtkWidget *da1=gtk_drawing_area_new();
   gtk_widget_set_hexpand(da1, TRUE);
