@@ -2,6 +2,15 @@
 <!-- Generated with glade 3.18.3 -->
 <interface>
   <requires lib="gtk+" version="3.12"/>
+  <object class="GtkOffscreenWindow" id="backwind">
+    <property name="can_focus">False</property>
+    <child>
+      <object class="GtkDrawingArea" id="backdraw">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+      </object>
+    </child>
+  </object>
   <object class="GtkFileFilter" id="filesdk">
     <mime-types>
       <mime-type>application</mime-type>
@@ -145,13 +154,13 @@
     <property name="can_focus">False</property>
     <property name="border_width">10</property>
     <property name="transient_for">window_main</property>
+    <signal name="delete-event" handler="on_Maze_area_delete_event" swapped="no"/>
     <child>
       <object class="GtkDrawingArea" id="drawArea">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="hexpand">True</property>
         <property name="vexpand">True</property>
-        <signal name="key-press-event" handler="on_drawArea_key_press_tab_event" swapped="no"/>
       </object>
     </child>
   </object>
@@ -353,11 +362,12 @@
             <property name="can_focus">False</property>
             <property name="layout_style">end</property>
             <child>
-              <object class="GtkButton" id="ResolvCancelar">
+              <object class="GtkButton" id="GenCancelar">
                 <property name="label" translatable="yes">Cancelar</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <signal name="clicked" handler="on_GenCancelar_clicked" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -366,11 +376,12 @@
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="ResolvAceptar">
+              <object class="GtkButton" id="GenAceptar">
                 <property name="label" translatable="yes">Aceptar</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <signal name="clicked" handler="on_GenAceptar_clicked" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -397,6 +408,7 @@
                 <property name="can_focus">True</property>
                 <property name="max_length">4</property>
                 <property name="width_chars">4</property>
+                <property name="overwrite_mode">True</property>
                 <property name="input_purpose">number</property>
                 <property name="climb_rate">0.10000000000000001</property>
                 <property name="snap_to_ticks">True</property>
@@ -416,6 +428,7 @@
                 <property name="can_focus">True</property>
                 <property name="max_length">4</property>
                 <property name="width_chars">4</property>
+                <property name="overwrite_mode">True</property>
                 <property name="input_purpose">number</property>
                 <property name="climb_rate">0.10000000000000001</property>
                 <property name="snap_to_ticks">True</property>

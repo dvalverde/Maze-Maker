@@ -4,7 +4,9 @@
 #include <string.h>
 #include <pthread.h>
 #include <time.h>
-//#include <gtk/gtk.h>
+#include <gtk/gtk.h>
+#include <gdk/gdkkeysyms.h>
+#include <cairo.h>
 #include <unistd.h> //nanosleep(&ps, NULL); struct timespec ps;
 
 int ArBase[4194304]={0};
@@ -22,7 +24,10 @@ int stp;
 char* archivo;
 
 GtkDialog* mnsjResolv;
+GtkDialog* Generar;
 GtkDialog* Confirm;
+GtkApplicationWindow* DAdial;
+GtkDrawingArea* DrawArea;
 GtkFileChooserDialog* DA;
 GtkFileChooserDialog* DG;
 GtkWidget* window;
@@ -44,6 +49,7 @@ char *TRes;
 int guardar();
 int abrir();
 void Pasar();
+void configspnbttn();
 
 void set_basef();
 void set_basec();
@@ -56,6 +62,10 @@ void generate_maze();
 void desplegar ();
 int abrir_maze(char* archivo);
 void guardar_maze(char* archivo);
+static void do_drawing(cairo_t *cr);
+static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data);
+static gboolean check_escape(GtkWidget *widget, GdkEventKey *event, gpointer data);
+
 
 int main(int argc, char *argv[])
 {
@@ -73,16 +83,17 @@ int main(int argc, char *argv[])
 	TRes= g_new (gchar,20);
 
 	mnsjResolv=GTK_DIALOG(gtk_builder_get_object(builder, "msj_Resolver"));
+	DAdial=GTK_APPLICATION_WINDOW(gtk_builder_get_object(builder, "Maze_area"));
+	DrawArea=GTK_DRAWING_AREA(gtk_builder_get_object(builder, "drawArea"));
+	Generar=GTK_DIALOG(gtk_builder_get_object(builder, "msj_Generar"));
 	Confirm=GTK_DIALOG(gtk_builder_get_object(builder, "Confirm"));
 	filas=GTK_SPIN_BUTTON(gtk_builder_get_object(builder, "spinbuttonFilas"));
     columnas=GTK_SPIN_BUTTON(gtk_builder_get_object(builder, "spinbuttonColumnas"));
     DA=GTK_FILE_CHOOSER_DIALOG(gtk_builder_get_object(builder,"fileAbrir"));
     DG=GTK_FILE_CHOOSER_DIALOG(gtk_builder_get_object(builder,"fileGuardar"));
     ABRIR=GTK_FILE_CHOOSER(DA);
-	GUARDAR=GTK_FILE_CHOOSER(DG);;
-
-    Solucionable=GTK_LABEL(gtk_builder_get_object(builder, "Solucionable"));
-
+	GUARDAR=GTK_FILE_CHOOSER(DG);
+	configspnbttn();
     gtk_builder_connect_signals(builder, NULL);
 
     g_object_unref(builder);
@@ -103,25 +114,27 @@ int resolv(int m,int n,int ar[][n]){
         for(j=0;j<n;j++)
             ar[i][j]=0;
     }
-    i=spawn/n;
-    j=spawn%n;
-    ar[i][j]=16;
-    addFrontier(m,n,i,j,ar);
-    while(stp>0){
-        mov=0;
-        if(stp>0)
-            mov = rand()%stp;
-        i=SpwTrR[mov];
-        j=SpwTrC[mov];
-        SpwTrR[mov]=SpwTrR[stp-1];
-        SpwTrC[mov]=SpwTrC[stp-1];
-        stp--;
-        removeBarrier(m,n,i,j,ar);
-        addFrontier(m,n,i,j,ar);
-    }
-    i=spawn/n;
-    j=spawn%n;
-    ar[i][j]-=16;
+    if(n*m>1){
+		i=spawn/n;
+		j=spawn%n;
+		ar[i][j]=16;
+		addFrontier(m,n,i,j,ar);
+		while(stp>0){
+			mov=0;
+			if(stp>0)
+				mov = rand()%stp;
+			i=SpwTrR[mov];
+			j=SpwTrC[mov];
+			SpwTrR[mov]=SpwTrR[stp-1];
+			SpwTrC[mov]=SpwTrC[stp-1];
+			stp--;
+			removeBarrier(m,n,i,j,ar);
+			addFrontier(m,n,i,j,ar);
+		}
+		i=spawn/n;
+		j=spawn%n;
+		ar[i][j]-=16;
+	}
     setentrys(m,n,ar);
     return 1;
 }
@@ -334,24 +347,25 @@ int abrir_maze(char* archivo){
 		return 0;
 }
 
-
-void etext(GtkSpinButton* entry,const gchar *text,gint length,gint *position, gpointer data){
-	GtkEditable *editable = GTK_EDITABLE(entry);
-	gchar *result = g_new (gchar,length);
-	g_signal_handlers_block_by_func (G_OBJECT (editable), G_CALLBACK (etext),data);
-	if (isdigit(text[*position])){
-		result[*position]=text[*position];
-		gtk_editable_insert_text (editable, result, length, position);
+void configspnbttn(){
+	gtk_spin_button_set_range (filas,2,2048);
+	gtk_spin_button_set_range (columnas,2,2048);
+	g_signal_connect(G_OBJECT(DrawArea), "draw",G_CALLBACK(on_draw_event), NULL);
+    g_signal_connect(G_OBJECT(DAdial), "key_press_event", G_CALLBACK(check_escape), NULL);
 	}
-	g_signal_handlers_unblock_by_func (G_OBJECT (editable),G_CALLBACK (etext),data);
-	g_signal_stop_emission_by_name (G_OBJECT (editable), "insert_text");
-
-	g_free (result);
-}
 
 void on_window_main_destroy()
 {
     gtk_main_quit();
+}
+
+static gboolean check_escape(GtkWidget *widget, GdkEventKey *event, gpointer data)
+{
+	if (event->keyval == GDK_KEY_Escape) {
+		gtk_widget_hide(GTK_WIDGET(DAdial));
+		return TRUE;
+	}
+	return FALSE;
 }
 
 void on_SalirB_clicked()
@@ -363,18 +377,27 @@ void on_GenerarB_clicked()
 {
 	if (!corriendo){
         corriendo=1;
-        if(resolv(BaseF,BaseC,&ArBase))
-            generate_maze();
+        gtk_dialog_run(Generar);
 	}
+}
+
+void on_GenAceptar_clicked(){
+	Pasar();
+	if(resolv(BaseF,BaseC,&ArBase))
+            generate_maze();
+    corriendo=0;
+	gtk_widget_show(GTK_WIDGET(DAdial));
+    gtk_widget_hide(GTK_WIDGET(Generar));
+}
+
+void on_GenCancelar_clicked(){
+	corriendo=0;
+	gtk_widget_hide(GTK_WIDGET(Generar));
 }
 
 void on_ResolverB_clicked()
 {
-	if (!corriendo){
-        corriendo=1;
-        if(resolv(BaseF,BaseC,&ArBase))
-            generate_maze();
-	}
+	gtk_dialog_run(mnsjResolv);
 }
 
 void on_AbrirB_clicked()
@@ -401,7 +424,6 @@ void on_CGCancelar_clicked(){
 void on_BGGuardar_clicked()
 {
     archivo= gtk_file_chooser_get_current_name (GTK_FILE_CHOOSER(GUARDAR));
-    Pistas();
     if( access( archivo, F_OK ) != -1 )
 		gtk_dialog_run(Confirm);
 	else
@@ -420,10 +442,9 @@ void on_BGCancelar_clicked()
 
 void on_BAAbrir_clicked()
 {
-	borrar();
 	archivo=gtk_file_chooser_get_filename(ABRIR);
 	if(abrir()==0)
-		desplegar();
+		gtk_widget_show(GTK_WIDGET(DAdial));
 	gtk_widget_hide(GTK_WIDGET(DA));
 }
 
@@ -437,12 +458,30 @@ void on_msj_aceptar_clicked()
 	gtk_widget_hide(GTK_WIDGET(mnsjResolv));
 }
 
+void on_Maze_area_delete_event()
+{
+	gtk_widget_hide(GTK_WIDGET(DAdial));
+}
+
+static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, 
+    gpointer user_data)
+{      
+  do_drawing(cr);
+
+  return FALSE;
+}
+
+static void do_drawing(cairo_t *cr){
+	cairo_set_source_rgb(cr, 0, 0, 0);
+	cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL,CAIRO_FONT_WEIGHT_NORMAL);
+	cairo_set_font_size(cr, 40.0);
+	cairo_move_to(cr, 10.0, 50.0);
+	cairo_show_text(cr, "Disziplin ist Macht.");    
+}
+
 void Pasar(){
-	gchar *text = g_new (gchar,5);
-    text=gtk_entry_get_text(filas);
-    BaseF=atoi(text);
-    text=gtk_entry_get_text(columnas);
-    BaseC=atoi(text);
+    BaseF=gtk_spin_button_get_value_as_int (filas);
+    BaseC=gtk_spin_button_get_value_as_int (columnas);
 }
 
 int abrir(){
@@ -450,3 +489,5 @@ int abrir(){
         return 1;
     return 0;
 }
+
+
