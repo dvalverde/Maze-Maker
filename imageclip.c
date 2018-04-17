@@ -50,6 +50,7 @@ static void do_drawing(cairo_t *cr, GtkWidget *widget)
   cairo_paint(cr);      
 }
 
+//https://lazka.github.io/pgi-docs/Gtk-3.0/classes/OffscreenWindow.html
 /*
  static void do_drawing(cairo_t *cr)
 { 
