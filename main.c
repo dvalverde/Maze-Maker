@@ -6,7 +6,6 @@
 #include <time.h>
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
-#include <cairo.h>
 #include <unistd.h> //nanosleep(&ps, NULL); struct timespec ps;
 
 int ArBase[4194304]={0};
@@ -27,7 +26,9 @@ GtkDialog* mnsjResolv;
 GtkDialog* Generar;
 GtkDialog* Confirm;
 GtkApplicationWindow* DAdial;
+GtkOffscreenWindow* offarea;
 GtkDrawingArea* DrawArea;
+GtkDrawingArea* BackArea;
 GtkFileChooserDialog* DA;
 GtkFileChooserDialog* DG;
 GtkWidget* window;
@@ -35,8 +36,6 @@ GtkFileChooser* ABRIR;
 GtkFileChooser* GUARDAR;
 GtkSpinButton* filas;
 GtkSpinButton* columnas;
-
-struct entrMod{GtkEntry* entry; int dato;};
 
 int corriendo=0;
 int solucion;
@@ -85,6 +84,7 @@ int main(int argc, char *argv[])
 	mnsjResolv=GTK_DIALOG(gtk_builder_get_object(builder, "msj_Resolver"));
 	DAdial=GTK_APPLICATION_WINDOW(gtk_builder_get_object(builder, "Maze_area"));
 	DrawArea=GTK_DRAWING_AREA(gtk_builder_get_object(builder, "drawArea"));
+	BackArea=GTK_DRAWING_AREA(gtk_builder_get_object(builder, "backdraw"));
 	Generar=GTK_DIALOG(gtk_builder_get_object(builder, "msj_Generar"));
 	Confirm=GTK_DIALOG(gtk_builder_get_object(builder, "Confirm"));
 	filas=GTK_SPIN_BUTTON(gtk_builder_get_object(builder, "spinbuttonFilas"));

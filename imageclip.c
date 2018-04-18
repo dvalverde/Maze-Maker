@@ -1,7 +1,5 @@
-#include <cairo.h>
 #include <stdlib.h>
 #include <gtk/gtk.h>
-//#include <math.h>
 
 static void do_drawing(cairo_t *, GtkWidget *);
 
