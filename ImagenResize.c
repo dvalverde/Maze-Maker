@@ -1,4 +1,9 @@
+#include <cairo.h>
+#include <stdlib.h>
 #include <gtk/gtk.h>
+#include <math.h>
+
+
 
 gboolean draw_picture(GtkWidget *da, cairo_t *cr, gpointer data)
 {
@@ -17,6 +22,7 @@ gboolean draw_picture(GtkWidget *da, cairo_t *cr, gpointer data)
 int main(int argc, char *argv[])
 {
   gtk_init(&argc, &argv);
+  gint width, height; 
 
   GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_title(GTK_WINDOW(window), "Resize Picture");
@@ -26,7 +32,11 @@ int main(int argc, char *argv[])
   g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
   //Needs a valid picture.
-  GdkPixbuf *pixbuf=gdk_pixbuf_new_from_file(argc>1 ? argv[1] : "image.png", NULL);
+  cairo_surface_t *image = cairo_image_surface_create_from_png("image.png");
+  width = cairo_image_surface_get_width(image);
+  height = cairo_image_surface_get_height(image); 
+  GdkPixbuf *pixbuf=gdk_pixbuf_get_from_surface(image,0,0,width,height);
+  //GdkPixbuf *pixbuf=gdk_pixbuf_new_from_file(argc>1 ? argv[1] : "image.png", NULL);
 
   GtkWidget *da1=gtk_drawing_area_new();
   gtk_widget_set_hexpand(da1, TRUE);

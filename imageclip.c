@@ -1,7 +1,7 @@
 #include <cairo.h>
 #include <stdlib.h>
 #include <gtk/gtk.h>
-#include <math.h>
+//#include <math.h>
 
 static void do_drawing(cairo_t *, GtkWidget *);
 
@@ -21,7 +21,7 @@ static void do_drawing(cairo_t *cr, GtkWidget *widget)
 {
   static gint pos_x = 128;
   static gint pos_y = 128;
-  static gint radius = 40;  
+  static gint radius = 150;  
   static gint delta[] = { 3, 3 };
 
   GtkWidget *win = gtk_widget_get_toplevel(widget);
@@ -29,13 +29,13 @@ static void do_drawing(cairo_t *cr, GtkWidget *widget)
   gint width, height;
   gtk_window_get_size(GTK_WINDOW(win), &width, &height);
 
-  if (pos_x < 0 + radius) {
+  if (pos_x < 0) {
       delta[0] = rand() % 4 + 5;
   } else if (pos_x > width - radius) {
       delta[0] = -(rand() % 4 + 5);
   }
 
-  if (pos_y < 0 + radius) {
+  if (pos_y < 0) {
       delta[1] = rand() % 4 + 5;
   } else if (pos_y > height - radius) {
       delta[1] = -(rand() % 4 + 5);
@@ -45,12 +45,12 @@ static void do_drawing(cairo_t *cr, GtkWidget *widget)
   pos_y += delta[1];
 
   cairo_set_source_surface(cr, glob.image, 1, 1);
-  cairo_arc(cr, pos_x, pos_y, radius, 0, 2*M_PI);
+  //cairo_arc(cr, pos_x, pos_y, radius, 0, 2*M_PI);
+  cairo_rectangle(cr, pos_x, pos_y, radius, radius);
   cairo_clip(cr);
   cairo_paint(cr);      
 }
 
-//https://lazka.github.io/pgi-docs/Gtk-3.0/classes/OffscreenWindow.html
 /*
  static void do_drawing(cairo_t *cr)
 { 
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
   gtk_window_set_title(GTK_WINDOW(window), "Clip image");
 
   gtk_widget_show_all(window);
-  g_timeout_add(100, (GSourceFunc) time_handler, (gpointer) window);
+  g_timeout_add(50, (GSourceFunc) time_handler, (gpointer) window);
 
   gtk_main();
 
