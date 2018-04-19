@@ -239,39 +239,51 @@ void setentrys(int m, int n,int ar[][n]){
     p=rand()%4;
     ei=pos[p];
     ej=alt[p];
-    while (ig){
-        p=rand()%4;
-        si=pos[p];
-        sj=alt[p];
-        if(ei*n+ej!=si*n+sj)
-            ig=0;
-    }
-    Entry=ei*n+ej;
-    Exit=si*n+sj;
-    if (ej==n-1){
-        ar[ei][ej]+=1;
-    }
-    else if (ei==m-1){
-        ar[ei][ej]+=2;
-    }
-    else if (ej==0){
-        ar[ei][ej]+=4;
-    }
-    else if (ei==0){
-        ar[ei][ej]+=8;
-    }
+    if(n*m==1){
+        int sel[4]={1,2,4,8};
+        ej=sel[p];
+        while (ig){
+            p=rand()%4;
+            sj=sel[p];
+            if(ej!=sj)
+                ig=0;
+        }
+        ar[0][0]=ej+sj;
+    }else{
+        while (ig){
+            p=rand()%4;
+            si=pos[p];
+            sj=alt[p];
+            if(ei*n+ej!=si*n+sj)
+                ig=0;
+        }
+        Entry=ei*n+ej;
+        Exit=si*n+sj;
+        if (ej==n-1){
+            ar[ei][ej]+=1;
+        }
+        else if (ei==m-1){
+            ar[ei][ej]+=2;
+        }
+        else if (ej==0){
+            ar[ei][ej]+=4;
+        }
+        else if (ei==0){
+            ar[ei][ej]+=8;
+        }
 
-    if (sj==n-1){
-        ar[si][sj]+=1;
-    }
-    else if (si==m-1){
-        ar[si][sj]+=2;
-    }
-    else if (sj==0){
-        ar[si][sj]+=4;
-    }
-    else if (si==0){
-        ar[si][sj]+=8;
+        if (sj==n-1){
+            ar[si][sj]+=1;
+        }
+        else if (si==m-1){
+            ar[si][sj]+=2;
+        }
+        else if (sj==0){
+            ar[si][sj]+=4;
+        }
+        else if (si==0){
+            ar[si][sj]+=8;
+        }
     }
 }
 
