@@ -40,6 +40,7 @@ GtkFileChooser* ABRIR;
 GtkFileChooser* GUARDAR;
 GtkSpinButton* filas;
 GtkSpinButton* columnas;
+GtkButton* GuardarB;
 
 int corriendo=0;
 int solucion;
@@ -97,10 +98,12 @@ int main(int argc, char *argv[])
     columnas=GTK_SPIN_BUTTON(gtk_builder_get_object(builder, "spinbuttonColumnas"));
     DA=GTK_FILE_CHOOSER_DIALOG(gtk_builder_get_object(builder,"fileAbrir"));
     DG=GTK_FILE_CHOOSER_DIALOG(gtk_builder_get_object(builder,"fileGuardar"));
+    GuardarB=GTK_BUTTON(gtk_builder_get_object(builder,"GuardarB"));
     ABRIR=GTK_FILE_CHOOSER(DA);
 	GUARDAR=GTK_FILE_CHOOSER(DG);
 	configspnbttn();
     gtk_builder_connect_signals(builder, NULL);
+    gtk_widget_set_sensitive (GTK_WIDGET(GuardarB), FALSE);
 
     g_object_unref(builder);
 
@@ -396,6 +399,7 @@ static gboolean check_escape(GtkWidget *widget, GdkEventKey *event, gpointer dat
 {
 	if (event->keyval == GDK_KEY_Escape) {
 		gtk_widget_hide(GTK_WIDGET(DAdial));
+		gtk_widget_set_sensitive (GTK_WIDGET(GuardarB), FALSE);
 		return TRUE;
 	}
 	return FALSE;
@@ -420,6 +424,7 @@ void on_GenAceptar_clicked(){
             generate_maze();
     corriendo=0;
 	gtk_widget_show(GTK_WIDGET(DAdial));
+	
     gtk_widget_hide(GTK_WIDGET(Generar));
 }
 
@@ -476,7 +481,7 @@ void on_BGCancelar_clicked()
 void on_BAAbrir_clicked()
 {
 	archivo=gtk_file_chooser_get_filename(ABRIR);
-	if(abrir()==0)
+	if(abrir())
 		gtk_widget_show(GTK_WIDGET(DAdial));
 	gtk_widget_hide(GTK_WIDGET(DA));
 }
@@ -494,6 +499,7 @@ void on_msj_aceptar_clicked()
 void on_Maze_area_delete_event()
 {
 	gtk_widget_hide(GTK_WIDGET(DAdial));
+	gtk_widget_set_sensitive (GTK_WIDGET(GuardarB), FALSE);
 }
 
 static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, 
@@ -508,7 +514,7 @@ static gboolean on_bdraw_event(GtkWidget *widget, cairo_t *cr,
     gpointer user_data)
 {   
 	do_bdrawing(cr);
-	
+	gtk_widget_set_sensitive (GTK_WIDGET(GuardarB), TRUE);
   return FALSE;
 }
 
