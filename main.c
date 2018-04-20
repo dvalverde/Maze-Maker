@@ -22,6 +22,8 @@ int stp;
 
 char* archivo;
 
+cairo_t *defcr;
+
 GtkDialog* mnsjResolv;
 GtkDialog* Generar;
 GtkDialog* Confirm;
@@ -31,6 +33,8 @@ GtkDrawingArea* DrawArea;
 GtkDrawingArea* BackArea;
 GtkFileChooserDialog* DA;
 GtkFileChooserDialog* DG;
+GtkAdjustment *adjustmentf;
+GtkAdjustment *adjustmentc;
 GtkWidget* window;
 GtkFileChooser* ABRIR;
 GtkFileChooser* GUARDAR;
@@ -62,12 +66,16 @@ void desplegar ();
 int abrir_maze(char* archivo);
 void guardar_maze(char* archivo);
 static void do_drawing(cairo_t *cr);
+static void do_bdrawing(cairo_t *cr);
 static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data);
+static gboolean on_bdraw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data);
 static gboolean check_escape(GtkWidget *widget, GdkEventKey *event, gpointer data);
 
 
 int main(int argc, char *argv[])
 {
+    srand(time(NULL));
+    
     GtkBuilder      *builder;
 
     gtk_init(&argc, &argv);
@@ -76,8 +84,6 @@ int main(int argc, char *argv[])
     gtk_builder_add_from_file (builder, "inter.glade", NULL);
 
     window = GTK_WIDGET(gtk_builder_get_object(builder, "window_main"));
-
-    srand(time(NULL));
 
 	TRes= g_new (gchar,20);
 
@@ -100,7 +106,16 @@ int main(int argc, char *argv[])
 
     gtk_widget_show(window);
     gtk_main();
-
+    /*
+    BaseF=5;
+	BaseC=6;//n m > 1
+    if(resolv(BaseF,BaseC,&ArBase))
+        generate_maze();
+    guardar_maze("prueba.txt");
+    desplegar();
+    printf("\n \n");
+    if (abrir_maze("prueba.txt"))
+        desplegar();*/
     return 0;
 }
 
@@ -290,6 +305,9 @@ void setentrys(int m, int n,int ar[][n]){
 void generate_maze(){
     int t,i,j,n,act;
     n=act=0;
+    for(i =0; i<(BaseF*2+1)*(BaseC*2+1);i++){
+			ArPant[i]=0;
+	}
     for(i =0; i<BaseF*2;i++){
         for(j =0; j<BaseC;j++){
             t=i>>1;
@@ -360,9 +378,12 @@ int abrir_maze(char* archivo){
 }
 
 void configspnbttn(){
-	gtk_spin_button_set_range (filas,2,2048);
-	gtk_spin_button_set_range (columnas,2,2048);
-	g_signal_connect(G_OBJECT(DrawArea), "draw",G_CALLBACK(on_draw_event), NULL);
+	adjustmentf = gtk_adjustment_new (0, 1, 2048, 1, 0, 0);
+	adjustmentc = gtk_adjustment_new (0, 1, 2048, 1, 0, 0);
+	gtk_spin_button_set_adjustment (filas,adjustmentf);
+	gtk_spin_button_set_adjustment (columnas,adjustmentc);
+	g_signal_connect(G_OBJECT(BackArea), "draw",G_CALLBACK(on_draw_event), NULL);
+	g_signal_connect(G_OBJECT(DrawArea), "draw",G_CALLBACK(on_bdraw_event), NULL);
     g_signal_connect(G_OBJECT(DAdial), "key_press_event", G_CALLBACK(check_escape), NULL);
 	}
 
@@ -477,10 +498,38 @@ void on_Maze_area_delete_event()
 
 static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, 
     gpointer user_data)
-{      
-  do_drawing(cr);
+{ 
+	do_drawing(cr);
 
   return FALSE;
+}
+
+static gboolean on_bdraw_event(GtkWidget *widget, cairo_t *cr, 
+    gpointer user_data)
+{   
+	do_bdrawing(cr);
+	
+  return FALSE;
+}
+
+static void do_bdrawing(cairo_t *cr){
+	cairo_set_source_rgb(cr, 1, 1, 1);
+	cairo_paint(cr);
+	int l=(2*BaseF+1)*(2*BaseC+1);
+    int n=(2*BaseC+1);
+    int tam=5;
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_translate(cr, 5, 5);
+    for(int i = 0;i<l;i++){
+        if(i%n==0&&i!=0){
+            cairo_translate(cr, -1*n*tam, tam);
+        }
+        if(ArPant[i]==0){
+			cairo_rectangle(cr, 0, 0, tam, tam);
+			cairo_fill(cr); 
+		}
+		cairo_translate(cr, tam, 0);
+    }
 }
 
 static void do_drawing(cairo_t *cr){
@@ -492,8 +541,10 @@ static void do_drawing(cairo_t *cr){
 }
 
 void Pasar(){
-    BaseF=gtk_spin_button_get_value_as_int (filas);
-    BaseC=gtk_spin_button_get_value_as_int (columnas);
+	gint value=gtk_spin_button_get_value (filas);
+    BaseF=value;
+    value=gtk_spin_button_get_value(columnas);
+    BaseC=value;
 }
 
 int abrir(){
