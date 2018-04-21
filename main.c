@@ -28,9 +28,7 @@ GtkDialog* mnsjResolv;
 GtkDialog* Generar;
 GtkDialog* Confirm;
 GtkApplicationWindow* DAdial;
-GtkOffscreenWindow* offarea;
 GtkDrawingArea* DrawArea;
-GtkDrawingArea* BackArea;
 GtkFileChooserDialog* DA;
 GtkFileChooserDialog* DG;
 GtkAdjustment *adjustmentf;
@@ -50,6 +48,12 @@ int eab=0;
 
 char *TRes;
 
+static gint pos_x = 5;
+static gint pos_y = 5;
+static gint hg = 15; 
+static gint wd = 15; 
+static cairo_surface_t * completo=NULL;
+
 int guardar();
 int abrir();
 void Pasar();
@@ -66,10 +70,8 @@ void generate_maze();
 void desplegar ();
 int abrir_maze(char* archivo);
 void guardar_maze(char* archivo);
-static void do_drawing(cairo_t *cr);
 static void do_bdrawing(cairo_t *cr);
 static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data);
-static gboolean on_bdraw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data);
 static gboolean check_escape(GtkWidget *widget, GdkEventKey *event, gpointer data);
 
 
@@ -91,7 +93,6 @@ int main(int argc, char *argv[])
 	mnsjResolv=GTK_DIALOG(gtk_builder_get_object(builder, "msj_Resolver"));
 	DAdial=GTK_APPLICATION_WINDOW(gtk_builder_get_object(builder, "Maze_area"));
 	DrawArea=GTK_DRAWING_AREA(gtk_builder_get_object(builder, "drawArea"));
-	BackArea=GTK_DRAWING_AREA(gtk_builder_get_object(builder, "backdraw"));
 	Generar=GTK_DIALOG(gtk_builder_get_object(builder, "msj_Generar"));
 	Confirm=GTK_DIALOG(gtk_builder_get_object(builder, "Confirm"));
 	filas=GTK_SPIN_BUTTON(gtk_builder_get_object(builder, "spinbuttonFilas"));
@@ -101,8 +102,8 @@ int main(int argc, char *argv[])
     GuardarB=GTK_BUTTON(gtk_builder_get_object(builder,"GuardarB"));
     ABRIR=GTK_FILE_CHOOSER(DA);
 	GUARDAR=GTK_FILE_CHOOSER(DG);
-	configspnbttn();
     gtk_builder_connect_signals(builder, NULL);
+    configspnbttn();
     gtk_widget_set_sensitive (GTK_WIDGET(GuardarB), FALSE);
 
     g_object_unref(builder);
@@ -380,16 +381,6 @@ int abrir_maze(char* archivo){
 		return 0;
 }
 
-void configspnbttn(){
-	adjustmentf = gtk_adjustment_new (0, 1, 2048, 1, 0, 0);
-	adjustmentc = gtk_adjustment_new (0, 1, 2048, 1, 0, 0);
-	gtk_spin_button_set_adjustment (filas,adjustmentf);
-	gtk_spin_button_set_adjustment (columnas,adjustmentc);
-	g_signal_connect(G_OBJECT(BackArea), "draw",G_CALLBACK(on_draw_event), NULL);
-	g_signal_connect(G_OBJECT(DrawArea), "draw",G_CALLBACK(on_bdraw_event), NULL);
-    g_signal_connect(G_OBJECT(DAdial), "key_press_event", G_CALLBACK(check_escape), NULL);
-	}
-
 void on_window_main_destroy()
 {
     gtk_main_quit();
@@ -496,26 +487,47 @@ void on_msj_aceptar_clicked()
 	gtk_widget_hide(GTK_WIDGET(mnsjResolv));
 }
 
-void on_Maze_area_delete_event()
+gboolean on_Maze_area_delete_event(GtkWidget *widget, GdkEvent *event, gpointer dat)
 {
-	gtk_widget_hide(GTK_WIDGET(DAdial));
+	gtk_widget_hide(widget);
 	gtk_widget_set_sensitive (GTK_WIDGET(GuardarB), FALSE);
+	return TRUE;
 }
 
-static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, 
-    gpointer user_data)
+static void clear_surface ()
+{
+  if (completo)
+    cairo_surface_destroy (completo);
+
+  completo = gdk_window_create_similar_surface (gtk_widget_get_window (GTK_WIDGET(DrawArea)),CAIRO_CONTENT_COLOR,10*BaseC+15,10*BaseF+15);
+  cairo_t *cr;
+
+  cr = cairo_create (completo);
+
+  cairo_set_source_rgb (cr, 1, 1, 1);
+  cairo_paint (cr);
+  
+  do_bdrawing(cr);
+
+  cairo_destroy (cr);
+  gtk_widget_set_sensitive (GTK_WIDGET(GuardarB), TRUE);
+}
+
+static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data)
 { 
-	do_drawing(cr);
+	clear_surface ();
+	gint width, height;
+	width=gtk_widget_get_allocated_width(widget);
+	height=gtk_widget_get_allocated_height(widget);
+	cairo_set_source_surface (cr, completo, 0, 0);
 
-  return FALSE;
-}
-
-static gboolean on_bdraw_event(GtkWidget *widget, cairo_t *cr, 
-    gpointer user_data)
-{   
-	do_bdrawing(cr);
-	gtk_widget_set_sensitive (GTK_WIDGET(GuardarB), TRUE);
-  return FALSE;
+	GdkPixbuf *alt=gdk_pixbuf_get_from_surface(completo,pos_x,pos_y,wd, hg);
+	GdkPixbuf *temp=gdk_pixbuf_scale_simple(alt, width, height, GDK_INTERP_BILINEAR);
+	gdk_cairo_set_source_pixbuf(cr, temp, 0, 0);
+	cairo_paint(cr);
+	g_object_unref(alt);
+	g_object_unref(temp);
+	return FALSE;
 }
 
 static void do_bdrawing(cairo_t *cr){
@@ -538,14 +550,6 @@ static void do_bdrawing(cairo_t *cr){
     }
 }
 
-static void do_drawing(cairo_t *cr){
-	cairo_set_source_rgb(cr, 0, 0, 0);
-	cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL,CAIRO_FONT_WEIGHT_NORMAL);
-	cairo_set_font_size(cr, 40.0);
-	cairo_move_to(cr, 10.0, 50.0);
-	cairo_show_text(cr, "Disziplin ist Macht.");    
-}
-
 void Pasar(){
 	gint value=gtk_spin_button_get_value (filas);
     BaseF=value;
@@ -559,4 +563,14 @@ int abrir(){
     return 0;
 }
 
+void configspnbttn(){
+	adjustmentf = gtk_adjustment_new (0, 1, 2048, 1, 0, 0);
+	adjustmentc = gtk_adjustment_new (0, 1, 2048, 1, 0, 0);
+	gtk_spin_button_set_adjustment (filas,adjustmentf);
+	gtk_spin_button_set_adjustment (columnas,adjustmentc);
+	g_signal_connect(G_OBJECT(DrawArea), "draw",G_CALLBACK(on_draw_event), NULL);
+    g_signal_connect(G_OBJECT(DAdial), "key_press_event", G_CALLBACK(check_escape), NULL);
+    g_signal_connect(G_OBJECT(DAdial), "delete-event", G_CALLBACK(on_Maze_area_delete_event), NULL);
+    
+	}
 
