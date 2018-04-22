@@ -41,6 +41,7 @@ GtkButton* GuardarB;
 
 int corriendo=0;
 int solucion=1;
+int activo=0;
 int lst;
 
 int eab=0;
@@ -49,6 +50,8 @@ char *TRes;
 
 static gint pos_x = 0;
 static gint pos_y = 0;
+static gint pos2_x = 0;
+static gint pos2_y = 0;
 static gint hg = 25; 
 static gint wd = 25; 
 static gint Thg = 25; 
@@ -391,6 +394,7 @@ int abrir_maze(char* archivo){
 
 void calcular_d(){
 	Thg=Twd=hg=wd=25;
+	pos2_x=pos_x=pos2_y=pos_y=0;
 	depth=0;
 	int max=BaseC;
 	if (BaseC<BaseF)
@@ -402,7 +406,7 @@ void calcular_d(){
 }
 
 int range(int n,int w, int m){
-	if (n<0)
+	if (n<=0)
 		return 0;
 	else if (m<n+w)
 		return m-w;
@@ -435,6 +439,14 @@ void zoomOut(){
 	}
 }
 
+void desplazar(gdouble x, gdouble y,gint h, gint w){
+	if (depth<maxd){
+		pos_x=range(pos_x+(pos2_x - x),wd,Twd);
+		pos_y=range(pos_y+(pos2_y - y),hg,Thg);
+		pos2_x=x;
+		pos2_y=y;
+	}
+}
 
 void on_window_main_destroy()
 {
@@ -446,6 +458,7 @@ static gboolean check_escape(GtkWidget *widget, GdkEventKey *event, gpointer dat
 	if (event->keyval == GDK_KEY_Escape) {
 		gtk_widget_hide(GTK_WIDGET(DAdial));
 		corriendo=0;
+		activo=0;
 		gtk_widget_set_sensitive (GTK_WIDGET(GuardarB), FALSE);
 		return TRUE;
 	}
@@ -459,9 +472,12 @@ void on_SalirB_clicked()
 
 void on_GenerarB_clicked()
 {
-	if (!corriendo){
-        corriendo=1;
-        gtk_dialog_run(Generar);
+	if(!activo){
+		if (!corriendo){
+			corriendo=1;
+			activo=1;
+			gtk_dialog_run(Generar);
+		}
 	}
 }
 
@@ -489,8 +505,10 @@ void on_ResolverB_clicked()
 
 void on_AbrirB_clicked()
 {
-	if(!corriendo)
+	if(!corriendo && !activo){
 		gtk_dialog_run(GTK_DIALOG(DA));
+		activo=1;
+		}
 }
 
 void on_GuardarB_clicked()
@@ -529,14 +547,16 @@ void on_BGCancelar_clicked()
 
 void on_BAAbrir_clicked()
 {
-	archivo=gtk_file_chooser_get_filename(ABRIR);
-	if(abrir()){
-		calcular_d();
-		if (completo)
-			clear_surface ();
-		gtk_widget_show(GTK_WIDGET(DAdial));
+	if(!(activo)){
+		archivo=gtk_file_chooser_get_filename(ABRIR);
+		if(abrir()){
+			calcular_d();
+			if (completo)
+				clear_surface ();
+			gtk_widget_show(GTK_WIDGET(DAdial));
+		}
+		gtk_widget_hide(GTK_WIDGET(DA));
 	}
-	gtk_widget_hide(GTK_WIDGET(DA));
 }
 
 void on_BACancelar_clicked()
@@ -553,6 +573,7 @@ gboolean on_Maze_area_delete_event(GtkWidget *widget, GdkEvent *event, gpointer 
 {
 	gtk_widget_hide(widget);
 	corriendo=0;
+	activo=0;
 	gtk_widget_set_sensitive (GTK_WIDGET(GuardarB), FALSE);
 	return TRUE;
 }
@@ -603,6 +624,27 @@ static gboolean scrollZ(GtkWidget * Widget,GdkEventScroll* event, gpointer data)
 	gtk_widget_queue_draw(Widget);
 	return TRUE;
 } 
+
+static gboolean button_press_event_cb (GtkWidget *widget, GdkEventButton *event, gpointer data)
+{
+	if (event->button == GDK_BUTTON_PRIMARY){
+		pos2_x=event->x;
+		pos2_y=event->y;
+   }
+  return TRUE;
+}
+
+static gboolean mover (GtkWidget *widget, GdkEventMotion *event, gpointer data){
+	if (event->state & GDK_BUTTON1_MASK){
+		gint width, height;
+		width=gtk_widget_get_allocated_width(widget);
+		height=gtk_widget_get_allocated_height(widget);
+		desplazar (event->x, event->y,height,width);
+    }
+	do_drawing();
+	gtk_widget_queue_draw(widget);
+	return TRUE;
+}
 
 static void do_drawing(){
 	GtkWidget* widget=GTK_WIDGET(DrawArea);
@@ -667,10 +709,14 @@ void configspnbttn(){
 	gtk_spin_button_set_adjustment (filas,adjustmentf);
 	gtk_spin_button_set_adjustment (columnas,adjustmentc);
 	gtk_widget_add_events(GTK_WIDGET(DrawArea), GDK_SCROLL_MASK);
+	gtk_widget_add_events(GTK_WIDGET(DrawArea), GDK_BUTTON_PRESS_MASK);
+	gtk_widget_add_events(GTK_WIDGET(DrawArea), GDK_POINTER_MOTION_MASK);
 	g_signal_connect(G_OBJECT(DrawArea), "draw",G_CALLBACK(on_draw_event), NULL);
     g_signal_connect(G_OBJECT(DAdial), "key_press_event", G_CALLBACK(check_escape), NULL);
     g_signal_connect(G_OBJECT(DAdial), "delete-event", G_CALLBACK(on_Maze_area_delete_event), NULL);
     g_signal_connect (G_OBJECT(DrawArea),"configure-event",G_CALLBACK (configure_event_cb), NULL);
     g_signal_connect(G_OBJECT(DrawArea), "scroll-event", G_CALLBACK(scrollZ), NULL);
+    g_signal_connect(G_OBJECT(DrawArea), "motion-notify-event", G_CALLBACK(mover), NULL);
+    g_signal_connect (G_OBJECT(DrawArea), "button-press-event", G_CALLBACK (button_press_event_cb), NULL);
 	}
 
