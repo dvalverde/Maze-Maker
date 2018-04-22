@@ -390,46 +390,48 @@ int abrir_maze(char* archivo){
 }
 
 void calcular_d(){
+	Thg=Twd=hg=wd=25;
+	depth=0;
 	int max=BaseC;
 	if (BaseC<BaseF)
 		max=BaseF;
-	if (max==1)
-		maxd=1;
-	else {
-		int step=1;
-		maxd=1;
-		while(step<max*2+1){
-			maxd++;
-			step=step*2;
-		}
+	maxd=0;
+	while(20*maxd+15<(max*10+5)){
+		maxd++;
 	}
 }
 
+int range(int n,int w, int m){
+	if (n<0)
+		return 0;
+	else if (m<n+w)
+		return m-w;
+	else
+		return n;
+}
+
 void zoomIn(){
-	if (depth>1){
+	if (depth>0){
 		depth--;
-		hg=wd=10*depth+15;
-		pos_x=pos_x+5*depth;
-		pos_y=pos_y+5*depth;
+		hg=wd=20*depth+15;
+		pos_x=pos_x+10;
+		pos_y=pos_y+10;
 	}
 }
 
 void zoomOut(){
-	if (depth<=maxd){
+	if (depth<maxd){
 		depth++;
-		hg=wd=10*depth+15;
-		if(pos_x-5*depth<=0)
-			pos_x=0;
-		else if(pos_x+5*depth>Twd)
-			pos_x=Twd-wd;
-		else
-			pos_x=pos_x-5*depth;
-		if(pos_y-5*depth<=0)
-			pos_y=0;
-		else if(pos_y+5*depth>Thg)
-			pos_y=Thg-hg;
-		else
-			pos_y=pos_y-5*depth;
+		hg=wd=20*depth+15;
+		pos_x=range(pos_x-10,wd,Twd);
+		pos_y=range(pos_y-10,hg,Thg);
+	}else{
+		int max=Twd;
+		if(Twd<Thg)
+			max=Thg;
+		hg=wd=max;
+		pos_x=0;
+		pos_y=0;
 	}
 }
 
@@ -561,7 +563,10 @@ static void clear_surface ()
     cairo_surface_destroy (completo);
   Thg = 10*BaseF+15; 
   Twd = 10*BaseC+15;
-  completo = gdk_window_create_similar_surface (gtk_widget_get_window (GTK_WIDGET(DrawArea)),CAIRO_CONTENT_COLOR,Twd,Thg);
+  int max=Thg;
+	if(max<Twd)
+		max=Twd;
+  completo = gdk_window_create_similar_surface (gtk_widget_get_window (GTK_WIDGET(DrawArea)),CAIRO_CONTENT_COLOR,max,max);
   cairo_t *cr;
   cr = cairo_create (completo);
   cairo_set_source_rgb (cr, 1, 1, 1);
