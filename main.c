@@ -408,6 +408,8 @@ void calcular_d(){
 int range(int n,int w, int m){
 	if (n<=0)
 		return 0;
+	else if(m<w)
+		return 0;
 	else if (m<n+w)
 		return m-w;
 	else
