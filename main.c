@@ -15,14 +15,13 @@ int BaseC=1;
 int Entry=0;
 int Exit=0;
 int ready=0;
+int maxd=0;
 
 int SpwTrR[2796203]={0};
 int SpwTrC[2796203]={0};
 int stp;
 
 char* archivo;
-
-cairo_t *defcr;
 
 GtkDialog* mnsjResolv;
 GtkDialog* Generar;
@@ -41,18 +40,22 @@ GtkSpinButton* columnas;
 GtkButton* GuardarB;
 
 int corriendo=0;
-int solucion;
+int solucion=1;
 int lst;
 
 int eab=0;
 
 char *TRes;
 
-static gint pos_x = 5;
-static gint pos_y = 5;
-static gint hg = 15; 
-static gint wd = 15; 
+static gint pos_x = 0;
+static gint pos_y = 0;
+static gint hg = 25; 
+static gint wd = 25; 
+static gint Thg = 25; 
+static gint Twd = 25;
+static int depth = 0;
 static cairo_surface_t * completo=NULL;
+static cairo_t *aux=NULL;
 
 int guardar();
 int abrir();
@@ -61,6 +64,8 @@ void configspnbttn();
 
 void set_basef();
 void set_basec();
+void calcular_d();
+static void do_drawing();
 
 int resolv(int m,int n,int ar[][n]);
 void addFrontier(int m, int n,int i, int j,int ar[][n]);
@@ -70,6 +75,7 @@ void generate_maze();
 void desplegar ();
 int abrir_maze(char* archivo);
 void guardar_maze(char* archivo);
+static void clear_surface ();
 static void do_bdrawing(cairo_t *cr);
 static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data);
 static gboolean check_escape(GtkWidget *widget, GdkEventKey *event, gpointer data);
@@ -124,6 +130,7 @@ int main(int argc, char *argv[])
 }
 
 int resolv(int m,int n,int ar[][n]){
+	solucion=0;
     int spawn = rand() % (n*m);
     int mov;
     int i,j;
@@ -339,6 +346,7 @@ void generate_maze(){
             ArPant[n]=1;
         n++;
     }
+    solucion=1;
 }
 
 void desplegar(){
@@ -381,6 +389,51 @@ int abrir_maze(char* archivo){
 		return 0;
 }
 
+void calcular_d(){
+	int max=BaseC;
+	if (BaseC<BaseF)
+		max=BaseF;
+	if (max==1)
+		maxd=1;
+	else {
+		int step=1;
+		maxd=1;
+		while(step<max*2+1){
+			maxd++;
+			step=step*2;
+		}
+	}
+}
+
+void zoomIn(){
+	if (depth>1){
+		depth--;
+		hg=wd=10*depth+15;
+		pos_x=pos_x+5*depth;
+		pos_y=pos_y+5*depth;
+	}
+}
+
+void zoomOut(){
+	if (depth<=maxd){
+		depth++;
+		hg=wd=10*depth+15;
+		if(pos_x-5*depth<=0)
+			pos_x=0;
+		else if(pos_x+5*depth>Twd)
+			pos_x=Twd-wd;
+		else
+			pos_x=pos_x-5*depth;
+		if(pos_y-5*depth<=0)
+			pos_y=0;
+		else if(pos_y+5*depth>Thg)
+			pos_y=Thg-hg;
+		else
+			pos_y=pos_y-5*depth;
+	}
+}
+
+
 void on_window_main_destroy()
 {
     gtk_main_quit();
@@ -390,6 +443,7 @@ static gboolean check_escape(GtkWidget *widget, GdkEventKey *event, gpointer dat
 {
 	if (event->keyval == GDK_KEY_Escape) {
 		gtk_widget_hide(GTK_WIDGET(DAdial));
+		corriendo=0;
 		gtk_widget_set_sensitive (GTK_WIDGET(GuardarB), FALSE);
 		return TRUE;
 	}
@@ -413,7 +467,9 @@ void on_GenAceptar_clicked(){
 	Pasar();
 	if(resolv(BaseF,BaseC,&ArBase))
             generate_maze();
-    corriendo=0;
+    calcular_d();
+    if (completo)
+		clear_surface ();
 	gtk_widget_show(GTK_WIDGET(DAdial));
 	
     gtk_widget_hide(GTK_WIDGET(Generar));
@@ -437,7 +493,7 @@ void on_AbrirB_clicked()
 
 void on_GuardarB_clicked()
 {
-	if(!corriendo)
+	if(corriendo&&solucion)
 		gtk_dialog_run(GTK_DIALOG(DG));
 }
 
@@ -472,8 +528,12 @@ void on_BGCancelar_clicked()
 void on_BAAbrir_clicked()
 {
 	archivo=gtk_file_chooser_get_filename(ABRIR);
-	if(abrir())
+	if(abrir()){
+		calcular_d();
+		if (completo)
+			clear_surface ();
 		gtk_widget_show(GTK_WIDGET(DAdial));
+	}
 	gtk_widget_hide(GTK_WIDGET(DA));
 }
 
@@ -490,6 +550,7 @@ void on_msj_aceptar_clicked()
 gboolean on_Maze_area_delete_event(GtkWidget *widget, GdkEvent *event, gpointer dat)
 {
 	gtk_widget_hide(widget);
+	corriendo=0;
 	gtk_widget_set_sensitive (GTK_WIDGET(GuardarB), FALSE);
 	return TRUE;
 }
@@ -498,37 +559,69 @@ static void clear_surface ()
 {
   if (completo)
     cairo_surface_destroy (completo);
-
-  completo = gdk_window_create_similar_surface (gtk_widget_get_window (GTK_WIDGET(DrawArea)),CAIRO_CONTENT_COLOR,10*BaseC+15,10*BaseF+15);
+  Thg = 10*BaseF+15; 
+  Twd = 10*BaseC+15;
+  completo = gdk_window_create_similar_surface (gtk_widget_get_window (GTK_WIDGET(DrawArea)),CAIRO_CONTENT_COLOR,Twd,Thg);
   cairo_t *cr;
-
   cr = cairo_create (completo);
-
   cairo_set_source_rgb (cr, 1, 1, 1);
-  cairo_paint (cr);
-  
+  cairo_paint (cr); 
   do_bdrawing(cr);
-
   cairo_destroy (cr);
   gtk_widget_set_sensitive (GTK_WIDGET(GuardarB), TRUE);
 }
 
-static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data)
-{ 
-	clear_surface ();
+static gboolean configure_event_cb (GtkWidget *widget,GdkEventConfigure *event,gpointer data)
+{
+  if (completo)
+    cairo_surface_destroy (completo);
+  completo = gdk_window_create_similar_surface (gtk_widget_get_window (widget),CAIRO_CONTENT_COLOR,gtk_widget_get_allocated_width (widget),gtk_widget_get_allocated_height (widget));
+  cairo_t *cr;
+  cr = cairo_create (completo);
+  cairo_set_source_rgb (cr, 1, 1, 1);
+  cairo_paint (cr);
+  cairo_destroy (cr);
+  clear_surface ();
+  
+  return TRUE;
+}
+
+static gboolean scrollZ(GtkWidget * Widget,GdkEventScroll* event, gpointer data)
+{
+	if(event->direction==GDK_SCROLL_UP){
+		zoomIn();
+	}
+	else if(event->direction==GDK_SCROLL_DOWN){
+		zoomOut();
+	}
+	do_drawing();
+	gtk_widget_queue_draw(Widget);
+	return TRUE;
+} 
+
+static void do_drawing(){
+	GtkWidget* widget=GTK_WIDGET(DrawArea);
 	gint width, height;
 	width=gtk_widget_get_allocated_width(widget);
 	height=gtk_widget_get_allocated_height(widget);
-	cairo_set_source_surface (cr, completo, 0, 0);
+	cairo_set_source_surface (aux, completo, 0, 0);
 
 	GdkPixbuf *alt=gdk_pixbuf_get_from_surface(completo,pos_x,pos_y,wd, hg);
 	GdkPixbuf *temp=gdk_pixbuf_scale_simple(alt, width, height, GDK_INTERP_BILINEAR);
-	gdk_cairo_set_source_pixbuf(cr, temp, 0, 0);
-	cairo_paint(cr);
+	gdk_cairo_set_source_pixbuf(aux, temp, 0, 0);
+	cairo_paint(aux);
 	g_object_unref(alt);
 	g_object_unref(temp);
-	return FALSE;
 }
+
+static gboolean on_draw_event(GtkWidget *widget, cairo_t *cr, gpointer user_data)
+{ 
+	if (aux==NULL)
+		aux = cr;
+	do_drawing();
+	return TRUE;
+}
+
 
 static void do_bdrawing(cairo_t *cr){
 	cairo_set_source_rgb(cr, 1, 1, 1);
@@ -568,9 +661,11 @@ void configspnbttn(){
 	adjustmentc = gtk_adjustment_new (0, 1, 2048, 1, 0, 0);
 	gtk_spin_button_set_adjustment (filas,adjustmentf);
 	gtk_spin_button_set_adjustment (columnas,adjustmentc);
+	gtk_widget_add_events(GTK_WIDGET(DrawArea), GDK_SCROLL_MASK);
 	g_signal_connect(G_OBJECT(DrawArea), "draw",G_CALLBACK(on_draw_event), NULL);
     g_signal_connect(G_OBJECT(DAdial), "key_press_event", G_CALLBACK(check_escape), NULL);
     g_signal_connect(G_OBJECT(DAdial), "delete-event", G_CALLBACK(on_Maze_area_delete_event), NULL);
-    
+    g_signal_connect (G_OBJECT(DrawArea),"configure-event",G_CALLBACK (configure_event_cb), NULL);
+    g_signal_connect(G_OBJECT(DrawArea), "scroll-event", G_CALLBACK(scrollZ), NULL);
 	}
 
