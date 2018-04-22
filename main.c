@@ -38,11 +38,14 @@ GtkFileChooser* GUARDAR;
 GtkSpinButton* filas;
 GtkSpinButton* columnas;
 GtkButton* GuardarB;
+GtkSwitch* switchB;
 
 int corriendo=0;
 int solucion=1;
 int activo=0;
 int lst;
+int scale=1;
+int mejorar=0;
 
 int eab=0;
 
@@ -52,10 +55,10 @@ static gint pos_x = 0;
 static gint pos_y = 0;
 static gint pos2_x = 0;
 static gint pos2_y = 0;
-static gint hg = 25; 
-static gint wd = 25; 
-static gint Thg = 25; 
-static gint Twd = 25;
+static gint hg = 5; 
+static gint wd = 5; 
+static gint Thg = 5; 
+static gint Twd = 5;
 static int depth = 0;
 static cairo_surface_t * completo=NULL;
 static cairo_t *aux=NULL;
@@ -109,6 +112,7 @@ int main(int argc, char *argv[])
     DA=GTK_FILE_CHOOSER_DIALOG(gtk_builder_get_object(builder,"fileAbrir"));
     DG=GTK_FILE_CHOOSER_DIALOG(gtk_builder_get_object(builder,"fileGuardar"));
     GuardarB=GTK_BUTTON(gtk_builder_get_object(builder,"GuardarB"));
+    switchB=GTK_SWITCH (gtk_builder_get_object(builder,"switch"));
     ABRIR=GTK_FILE_CHOOSER(DA);
 	GUARDAR=GTK_FILE_CHOOSER(DG);
     gtk_builder_connect_signals(builder, NULL);
@@ -393,14 +397,14 @@ int abrir_maze(char* archivo){
 }
 
 void calcular_d(){
-	Thg=Twd=hg=wd=25;
+	Thg=Twd=hg=wd=5*scale;
 	pos2_x=pos_x=pos2_y=pos_y=0;
 	depth=0;
 	int max=BaseC;
 	if (BaseC<BaseF)
 		max=BaseF;
 	maxd=0;
-	while(20*maxd+15<(max*10+5)){
+	while(4*scale*maxd+3*scale<(max*2*scale+scale)){
 		maxd++;
 	}
 }
@@ -419,18 +423,18 @@ int range(int n,int w, int m){
 void zoomIn(){
 	if (depth>0){
 		depth--;
-		hg=wd=20*depth+15;
-		pos_x=pos_x+10;
-		pos_y=pos_y+10;
+		hg=wd=4*scale*depth+3*scale;
+		pos_x=pos_x+2*scale;
+		pos_y=pos_y+2*scale;
 	}
 }
 
 void zoomOut(){
 	if (depth<maxd){
 		depth++;
-		hg=wd=20*depth+15;
-		pos_x=range(pos_x-10,wd,Twd);
-		pos_y=range(pos_y-10,hg,Thg);
+		hg=wd=4*scale*depth+3*scale;
+		pos_x=range(pos_x-2*scale,wd,Twd);
+		pos_y=range(pos_y-2*scale,hg,Thg);
 	}else{
 		int max=Twd;
 		if(Twd<Thg)
@@ -552,6 +556,7 @@ void on_BAAbrir_clicked()
 	if(!(activo)){
 		archivo=gtk_file_chooser_get_filename(ABRIR);
 		if(abrir()){
+			scale=5;
 			calcular_d();
 			if (completo)
 				clear_surface ();
@@ -584,8 +589,8 @@ static void clear_surface ()
 {
   if (completo)
     cairo_surface_destroy (completo);
-  Thg = 10*BaseF+15; 
-  Twd = 10*BaseC+15;
+  Thg = 2*scale*BaseF+3*scale; 
+  Twd = 2*scale*BaseC+3*scale;
   int max=Thg;
 	if(max<Twd)
 		max=Twd;
@@ -636,6 +641,14 @@ static gboolean button_press_event_cb (GtkWidget *widget, GdkEventButton *event,
   return TRUE;
 }
 
+static void activate_cb (GObject *switcher, GParamSpec *pspec, gpointer user_data)
+{
+  if (gtk_switch_get_active (GTK_SWITCH (switcher)))
+    mejorar=1;
+  else
+    mejorar=0;
+}
+
 static gboolean mover (GtkWidget *widget, GdkEventMotion *event, gpointer data){
 	if (event->state & GDK_BUTTON1_MASK){
 		gint width, height;
@@ -677,9 +690,9 @@ static void do_bdrawing(cairo_t *cr){
 	cairo_paint(cr);
 	int l=(2*BaseF+1)*(2*BaseC+1);
     int n=(2*BaseC+1);
-    int tam=5;
+    int tam=scale;
     cairo_set_source_rgb(cr, 0, 0, 0);
-    cairo_translate(cr, 5, 5);
+    cairo_translate(cr, scale, scale);
     for(int i = 0;i<l;i++){
         if(i%n==0&&i!=0){
             cairo_translate(cr, -1*n*tam, tam);
@@ -697,6 +710,12 @@ void Pasar(){
     BaseF=value;
     value=gtk_spin_button_get_value(columnas);
     BaseC=value;
+    int max=(BaseF+BaseC)/2;
+    if(mejorar){
+		scale=range(100/max,0,100);
+		scale++;
+	}else
+		scale=1;
 }
 
 int abrir(){
@@ -720,5 +739,6 @@ void configspnbttn(){
     g_signal_connect(G_OBJECT(DrawArea), "scroll-event", G_CALLBACK(scrollZ), NULL);
     g_signal_connect(G_OBJECT(DrawArea), "motion-notify-event", G_CALLBACK(mover), NULL);
     g_signal_connect (G_OBJECT(DrawArea), "button-press-event", G_CALLBACK (button_press_event_cb), NULL);
+    g_signal_connect (G_OBJECT(switchB), "notify::active", G_CALLBACK (activate_cb), window);
 	}
 
