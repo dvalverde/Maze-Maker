@@ -712,7 +712,7 @@ void Pasar(){
     BaseC=value;
     int max=(BaseF+BaseC)/2;
     if(mejorar){
-		scale=range(100/max,0,100);
+		scale=range(512/max,0,256);
 		scale++;
 	}else
 		scale=1;
