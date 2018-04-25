@@ -12,6 +12,7 @@
   </object>
   <object class="GtkWindow" id="window_main">
     <property name="can_focus">False</property>
+    <property name="window_position">center</property>
     <signal name="destroy" handler="on_window_main_destroy" swapped="no"/>
     <child>
       <object class="GtkBox" id="box1">
@@ -168,6 +169,7 @@
   </object>
   <object class="GtkFileChooserDialog" id="fileAbrir">
     <property name="can_focus">False</property>
+    <property name="window_position">center</property>
     <property name="destroy_with_parent">True</property>
     <property name="type_hint">normal</property>
     <property name="transient_for">window_main</property>
@@ -226,6 +228,7 @@
   </object>
   <object class="GtkFileChooserDialog" id="fileGuardar">
     <property name="can_focus">False</property>
+    <property name="window_position">center</property>
     <property name="destroy_with_parent">True</property>
     <property name="type_hint">normal</property>
     <property name="transient_for">window_main</property>
@@ -285,6 +288,7 @@
   </object>
   <object class="GtkDialog" id="Confirm">
     <property name="can_focus">False</property>
+    <property name="window_position">center-on-parent</property>
     <property name="destroy_with_parent">True</property>
     <property name="type_hint">dialog</property>
     <property name="transient_for">fileGuardar</property>
@@ -351,6 +355,7 @@
   </object>
   <object class="GtkDialog" id="msj_Generar">
     <property name="can_focus">False</property>
+    <property name="window_position">center</property>
     <property name="destroy_with_parent">True</property>
     <property name="type_hint">dialog</property>
     <property name="transient_for">window_main</property>

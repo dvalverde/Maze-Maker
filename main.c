@@ -501,6 +501,7 @@ void on_GenAceptar_clicked(){
 
 void on_GenCancelar_clicked(){
 	corriendo=0;
+	activo=0;
 	gtk_widget_hide(GTK_WIDGET(Generar));
 }
 
@@ -513,7 +514,6 @@ void on_AbrirB_clicked()
 {
 	if(!corriendo && !activo){
 		gtk_dialog_run(GTK_DIALOG(DA));
-		activo=1;
 		}
 }
 
@@ -556,6 +556,8 @@ void on_BAAbrir_clicked()
 	if(!(activo)){
 		archivo=gtk_file_chooser_get_filename(ABRIR);
 		if(abrir()){
+			activo=1;
+			corriendo=1;
 			scale=5;
 			calcular_d();
 			if (completo)
@@ -569,6 +571,7 @@ void on_BAAbrir_clicked()
 void on_BACancelar_clicked()
 {
 	gtk_widget_hide(GTK_WIDGET(DA));
+	activo=0;
 }
 
 void on_msj_aceptar_clicked()
