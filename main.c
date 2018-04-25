@@ -674,7 +674,7 @@ static void do_drawing(){
 	GdkPixbuf *alt=gdk_pixbuf_get_from_surface(completo,pos_x,pos_y,wd, hg);
 	GdkPixbuf *temp=NULL;
 	if(depth>5)
-		temp=gdk_pixbuf_scale_simple(alt, width, height, GDK_INTERP_BILINEAR);
+		temp=gdk_pixbuf_scale_simple(alt, width, height, GDK_INTERP_TILES);
 	else
 		temp=gdk_pixbuf_scale_simple(alt, width, height, GDK_INTERP_NEAREST);
 	gdk_cairo_set_source_pixbuf(aux, temp, 0, 0);
