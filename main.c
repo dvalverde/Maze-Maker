@@ -588,6 +588,28 @@ gboolean on_Maze_area_delete_event(GtkWidget *widget, GdkEvent *event, gpointer 
 	return TRUE;
 }
 
+gboolean on_guardar_delete_event(GtkWidget *widget, GdkEvent *event, gpointer dat)
+{
+	gtk_widget_hide(widget);
+	return TRUE;
+}
+
+gboolean on_abrir_delete_event(GtkWidget *widget, GdkEvent *event, gpointer dat)
+{
+	gtk_widget_hide(widget);
+	corriendo=0;
+	activo=0;
+	return TRUE;
+}
+
+gboolean on_generar_delete_event(GtkWidget *widget, GdkEvent *event, gpointer dat)
+{
+	gtk_widget_hide(widget);
+	corriendo=0;
+	activo=0;
+	return TRUE;
+}
+
 static void clear_surface ()
 {
   if (completo)
@@ -672,11 +694,7 @@ static void do_drawing(){
 	cairo_set_source_surface (aux, completo, 0, 0);
 
 	GdkPixbuf *alt=gdk_pixbuf_get_from_surface(completo,pos_x,pos_y,wd, hg);
-	GdkPixbuf *temp=NULL;
-	if(depth>5)
-		temp=gdk_pixbuf_scale_simple(alt, width, height, GDK_INTERP_TILES);
-	else
-		temp=gdk_pixbuf_scale_simple(alt, width, height, GDK_INTERP_NEAREST);
+	GdkPixbuf *temp=gdk_pixbuf_scale_simple(alt, width, height, GDK_INTERP_TILES);
 	gdk_cairo_set_source_pixbuf(aux, temp, 0, 0);
 	cairo_paint(aux);
 	g_object_unref(alt);
@@ -742,6 +760,9 @@ void configspnbttn(){
 	g_signal_connect(G_OBJECT(DrawArea), "draw",G_CALLBACK(on_draw_event), NULL);
     g_signal_connect(G_OBJECT(DAdial), "key_press_event", G_CALLBACK(check_escape), NULL);
     g_signal_connect(G_OBJECT(DAdial), "delete-event", G_CALLBACK(on_Maze_area_delete_event), NULL);
+    g_signal_connect(G_OBJECT(DG), "delete-event", G_CALLBACK(on_guardar_delete_event), NULL);
+    g_signal_connect(G_OBJECT(DA), "delete-event", G_CALLBACK(on_abrir_delete_event), NULL);
+    g_signal_connect(G_OBJECT(Generar), "delete-event", G_CALLBACK(on_generar_delete_event), NULL);
     g_signal_connect (G_OBJECT(DrawArea),"configure-event",G_CALLBACK (configure_event_cb), NULL);
     g_signal_connect(G_OBJECT(DrawArea), "scroll-event", G_CALLBACK(scrollZ), NULL);
     g_signal_connect(G_OBJECT(DrawArea), "motion-notify-event", G_CALLBACK(mover), NULL);
